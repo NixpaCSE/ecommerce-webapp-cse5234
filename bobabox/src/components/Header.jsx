@@ -9,7 +9,7 @@ function Header({ onCartClick }) {
     <header className="header">
       <Link to="/purchase" className="brand">
         <span className="brand-dot" aria-hidden="true" />
-        Boba Shop
+        BobaBox
       </Link>
 
       <button type="button" className="cart-button" onClick={onCartClick}>
