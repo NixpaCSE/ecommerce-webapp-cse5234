@@ -90,6 +90,7 @@
   background: var(--brown);
   color: #fff;
   font-weight: 600;
+  white-space: nowrap;
   transition: background 0.15s;
 }
 

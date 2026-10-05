@@ -38,8 +38,8 @@ function Purchase() {
   return (
     <section>
       <div className="page-intro">
-        <h1>Our Menu</h1>
-        <p>Pick your drinks and how many you want, then add them to your cart.</p>
+        <h1>Shop Boba Kits</h1>
+        <p>Everything you need to make boba at home, shipped to your door. Pick your kits and add them to your cart.</p>
       </div>
 
       <div className="product-grid">

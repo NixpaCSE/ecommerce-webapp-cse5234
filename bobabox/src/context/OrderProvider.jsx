@@ -4,7 +4,7 @@ import { OrderContext } from './OrderContext.js'
 // Shared order state for all 5 pages (cart, payment, shipping).
 // Use it in any component with: const { cart, payment, setPayment, ... } = useOrder()
 
-const CART_STORAGE_KEY = 'boba-shop-cart'
+const CART_STORAGE_KEY = 'bobabox-cart'
 
 const emptyPayment = {
   creditCardNumber: '',

@@ -1,11 +1,11 @@
-# Boba Shop (front end)
+# BobaBox (front end)
 
 React + Vite + React Router v6.
 
 ## Run it
 
 ```bash
-cd boba-shop
+cd bobabox
 npm install
 npm run dev
 ```
@@ -34,7 +34,7 @@ import { useOrder } from '../context/useOrder.js'
 
 const {
   cart,            // [{ id, name, price, quantity }]
-  cartCount,       // total number of drinks
+  cartCount,       // total number of kits
   cartTotal,       // total price
   addToCart,       // (product, quantity)
   updateQuantity,  // (id, quantity) — 0 removes the line
@@ -51,6 +51,6 @@ The cart is also saved to `localStorage`, so it survives a page refresh.
 
 ## Other files
 
-- `src/data/products.js` – hardcoded catalog of 5 drinks (moves to the backend in Labs 7–8)
+- `src/data/products.js` – hardcoded catalog of 5 boba kits (moves to the backend in Labs 7–8)
 - `src/components/Header.jsx` / `Cart.jsx` – top bar and slide-out cart (available on every page)
 - `src/utils/format.js` – `formatPrice()` helper

@@ -26,7 +26,7 @@ function Cart({ open, onClose }) {
         </div>
 
         {cart.length === 0 ? (
-          <p className="cart-empty">Your cart is empty. Add some boba!</p>
+          <p className="cart-empty">Your cart is empty. Add a boba kit!</p>
         ) : (
           <ul className="cart-lines">
             {cart.map((line) => (
