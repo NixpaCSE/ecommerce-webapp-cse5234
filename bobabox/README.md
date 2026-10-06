@@ -83,5 +83,7 @@ Put new styles in `src/App.css` under a comment for your page.
 
 - `src/data/products.js` – hardcoded catalog of 5 boba kits (moves to the backend in Labs 7–8)
 - `src/components/Header.jsx` / `Cart.jsx` – top bar and slide-out cart (available on every page)
-- `src/components/Swatch.jsx` – gradient circle used as each kit's image
+- `src/components/Swatch.jsx` – gradient circle shown for each kit
+- `src/components/ProductPreview.jsx` – popup with the product photo (click a kit's circle)
+- `public/images/` – product photos (photos from [Takes Two Eggs](https://takestwoeggs.com))
 - `src/utils/format.js` – `formatPrice()` helper

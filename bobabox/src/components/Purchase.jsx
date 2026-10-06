@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiArrowRight, FiCheck, FiShoppingBag } from 'react-icons/fi'
+import { FiArrowRight, FiCheck, FiEye, FiShoppingBag } from 'react-icons/fi'
 import products from '../data/products.js'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
 import Swatch from './Swatch.jsx'
+import ProductPreview from './ProductPreview.jsx'
 
 function Purchase() {
   const { cart, cartCount, cartTotal, addToCart } = useOrder()
@@ -15,6 +16,8 @@ function Purchase() {
     Object.fromEntries(products.map((p) => [p.id, 1])),
   )
   const [justAddedId, setJustAddedId] = useState(null)
+  const [previewProduct, setPreviewProduct] = useState(null)
+  const closePreview = useCallback(() => setPreviewProduct(null), [])
 
   function handleQuantityChange(id, value) {
     const quantity = Math.max(0, Math.floor(Number(value) || 0))
@@ -57,7 +60,18 @@ function Purchase() {
               onSubmit={(e) => handleAddToCart(e, product)}
             >
               <div className="product-image">
-                <Swatch gradient={product.gradient} image={product.image} alt={product.name} />
+                <button
+                  type="button"
+                  className="preview-trigger"
+                  onClick={() => setPreviewProduct(product)}
+                  aria-label={`Preview ${product.name}`}
+                >
+                  <Swatch gradient={product.gradient} />
+                  <span className="preview-hint">
+                    <FiEye /> click to preview
+                  </span>
+                </button>
+                <FiEye className="preview-icon" aria-hidden="true" />
                 {inCart > 0 && <span className="in-cart-badge">{inCart} in cart</span>}
               </div>
 
@@ -113,6 +127,8 @@ function Purchase() {
           Checkout <FiArrowRight />
         </button>
       </div>
+
+      {previewProduct && <ProductPreview product={previewProduct} onClose={closePreview} />}
     </section>
   )
 }
