@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiCheck, FiShoppingCart } from 'react-icons/fi'
+import { FiArrowRight, FiCheck, FiShoppingBag } from 'react-icons/fi'
 import products from '../data/products.js'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
-import BobaCup from './BobaCup.jsx'
+import Swatch from './Swatch.jsx'
 
 function Purchase() {
   const { cart, cartCount, cartTotal, addToCart } = useOrder()
@@ -37,9 +37,14 @@ function Purchase() {
 
   return (
     <section>
-      <div className="page-intro">
-        <h1>Shop Boba Kits</h1>
-        <p>Everything you need to make boba at home, shipped to your door. Pick your kits and add them to your cart.</p>
+      <div className="hero">
+        <h1 className="hero-title">boba kits</h1>
+        <div className="hero-row">
+          <FiArrowRight className="hero-arrow" aria-hidden="true" />
+          <p className="hero-text">
+            Everything you need to make boba at home, shipped to your door.
+          </p>
+        </div>
       </div>
 
       <div className="product-grid">
@@ -52,7 +57,8 @@ function Purchase() {
               onSubmit={(e) => handleAddToCart(e, product)}
             >
               <div className="product-image">
-                <BobaCup teaColor={product.teaColor} pearlColor={product.pearlColor} />
+                <Swatch gradient={product.gradient} image={product.image} alt={product.name} />
+                {inCart > 0 && <span className="in-cart-badge">{inCart} in cart</span>}
               </div>
 
               <div className="product-body">
@@ -86,8 +92,6 @@ function Purchase() {
                   )}
                 </button>
               </div>
-
-              {inCart > 0 && <p className="in-cart-note">{inCart} in cart</p>}
             </form>
           )
         })}
@@ -95,7 +99,7 @@ function Purchase() {
 
       <div className="checkout-bar">
         <div className="checkout-summary">
-          <FiShoppingCart />
+          <FiShoppingBag />
           <span>
             {cartCount} {cartCount === 1 ? 'item' : 'items'} · {formatPrice(cartTotal)}
           </span>
@@ -106,7 +110,7 @@ function Purchase() {
           disabled={cartCount === 0}
           onClick={() => navigate('/purchase/paymentEntry')}
         >
-          Proceed to Checkout
+          Checkout <FiArrowRight />
         </button>
       </div>
     </section>
