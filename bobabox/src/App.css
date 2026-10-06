@@ -215,17 +215,7 @@
 }
 
 .swatch-circle {
-  transition: transform 0.4s ease;
-}
-
-.swatch-image {
-  position: absolute;
-  inset: 8%;
-  width: 84%;
-  height: 84%;
-  object-fit: contain;
-  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.25));
-  transition: transform 0.4s ease;
+  transition: transform 0.4s ease, filter 0.3s ease;
 }
 
 /* ---------- Product grid ---------- */
@@ -260,15 +250,181 @@
   transform: scale(1.05) rotate(-8deg);
 }
 
-.product-card:hover .swatch-image {
-  transform: scale(1.06);
-}
-
 .product-image {
   position: relative;
   display: flex;
   justify-content: center;
   padding: 36px 0 28px;
+}
+
+/* ---------- Preview trigger (hover label on the swatch) ---------- */
+
+.preview-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+}
+
+.preview-trigger:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 6px;
+}
+
+.preview-hint {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.82);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+
+.preview-trigger:hover .preview-hint,
+.preview-trigger:focus-visible .preview-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.preview-trigger:hover .swatch-circle {
+  filter: brightness(0.85);
+}
+
+.preview-icon {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  color: var(--muted);
+}
+
+/* ---------- Preview popup ---------- */
+
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 10, 10, 0.35);
+  backdrop-filter: blur(6px);
+  animation: fade-in 0.2s ease;
+}
+
+.preview-modal {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: min(860px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+  animation: pop-in 0.25s ease;
+}
+
+.preview-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.preview-image {
+  position: relative;
+  padding: 24px;
+  background: var(--surface);
+}
+
+.preview-image::before {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: var(--swatch);
+  filter: blur(50px);
+  opacity: 0.5;
+}
+
+.preview-image img {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 20px;
+}
+
+.preview-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px 36px;
+}
+
+.preview-name {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  text-transform: lowercase;
+}
+
+.preview-price {
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.preview-description {
+  margin: 14px 0 28px;
+  color: var(--muted);
+}
+
+.preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.preview-actions .primary-button {
+  flex: 1;
+}
+
+@media (max-width: 700px) {
+  .preview-modal {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-details {
+    padding: 24px;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
 }
 
 .in-cart-badge {
