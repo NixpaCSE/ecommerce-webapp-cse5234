@@ -2,15 +2,31 @@
 
 React + Vite + React Router v6.
 
-## Run it
+## Getting started
 
 ```bash
-cd bobabox
+git clone https://github.com/NixpaCSE/ecommerce-webapp-cse5234.git
+cd ecommerce-webapp-cse5234/bobabox
 npm install
 npm run dev
 ```
 
 Open http://localhost:5173 (it redirects to `/purchase`).
+
+## Team workflow
+
+Don't push straight to `main`. Work on your own branch and open a PR:
+
+```bash
+git checkout main && git pull          # start from the latest main
+git checkout -b feature/payment-entry  # one branch per page/feature
+# ...make changes...
+git add . && git commit -m "add payment entry form"
+git push -u origin feature/payment-entry
+```
+
+Then open a pull request on GitHub and have someone look it over before merging.
+Try to only edit your own page file so we don't get merge conflicts.
 
 ## Pages
 
@@ -49,8 +65,23 @@ const {
 
 The cart is also saved to `localStorage`, so it survives a page refresh.
 
+## Styling
+
+Keep pages consistent with the purchase page (white background, black text, light gray cards):
+
+- **Colors** – use the variables in `src/index.css` (`--ink`, `--muted`, `--surface`, `--border`) instead of new hex codes.
+- **Buttons** – `className="primary-button"` (black pill button).
+- **Inputs** – match the rounded `qty-input` style (1.5px `--border` outline, black on focus).
+- **Headings** – lowercase, heavy, tight: see `.hero-title` in `src/App.css`.
+- **Sections/cards** – `--surface` background with a large border radius (like `.product-card`).
+- **Prices** – always use `formatPrice()` from `src/utils/format.js`.
+- **Item images** – `<Swatch gradient={...} size="small" />` shows a kit's color (see `Cart.jsx`).
+
+Put new styles in `src/App.css` under a comment for your page.
+
 ## Other files
 
 - `src/data/products.js` – hardcoded catalog of 5 boba kits (moves to the backend in Labs 7–8)
 - `src/components/Header.jsx` / `Cart.jsx` – top bar and slide-out cart (available on every page)
+- `src/components/Swatch.jsx` – gradient circle used as each kit's image
 - `src/utils/format.js` – `formatPrice()` helper
