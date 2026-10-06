@@ -2,6 +2,12 @@ import { useNavigate } from 'react-router-dom'
 import { FiMinus, FiPlus, FiTrash2, FiX } from 'react-icons/fi'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
+import products from '../data/products.js'
+import Swatch from './Swatch.jsx'
+
+function gradientFor(id) {
+  return products.find((p) => p.id === id)?.gradient
+}
 
 // Slide-out cart available from every page. Lets the user change quantities
 // or remove line items at any time.
@@ -19,18 +25,19 @@ function Cart({ open, onClose }) {
       <div className={`cart-overlay ${open ? 'open' : ''}`} onClick={onClose} />
       <aside className={`cart-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
         <div className="cart-header">
-          <h2>Your Cart</h2>
+          <h2>your cart</h2>
           <button type="button" className="icon-button" onClick={onClose} aria-label="Close cart">
             <FiX size={22} />
           </button>
         </div>
 
         {cart.length === 0 ? (
-          <p className="cart-empty">Your cart is empty. Add some boba!</p>
+          <p className="cart-empty">Your cart is empty. Add a boba kit!</p>
         ) : (
           <ul className="cart-lines">
             {cart.map((line) => (
               <li key={line.id} className="cart-line">
+                <Swatch gradient={gradientFor(line.id)} size="small" />
                 <div className="cart-line-info">
                   <span className="cart-line-name">{line.name}</span>
                   <span className="cart-line-price">{formatPrice(line.price)} each</span>
