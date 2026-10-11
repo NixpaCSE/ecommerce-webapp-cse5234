@@ -23,17 +23,11 @@ function validate({ name, addressLine1, city, state, zip }) {
 }
 
 function ShippingEntry() {
-  const { setShipping } = useOrder()
+  const { shipping, setShipping } = useOrder()
   const navigate = useNavigate()
 
-  const [form, setForm] = useState({
-    name: '',
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    state: '',
-    zip: '',
-  })
+  // Start from the saved shipping info so "edit" on the review page keeps what was entered
+  const [form, setForm] = useState(shipping)
   const [errors, setErrors] = useState({})
 
   const handleChange = (field, formatter) => (event) => {
