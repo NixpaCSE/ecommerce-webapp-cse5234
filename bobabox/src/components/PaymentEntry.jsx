@@ -62,15 +62,14 @@ function validate({ creditCardNumber, expirationDate, cvvCode, cardHolderName })
 }
 
 function PaymentEntry() {
-  const { setPayment } = useOrder()
+  const { payment, setPayment } = useOrder()
   const navigate = useNavigate()
 
-  const [form, setForm] = useState({
-    creditCardNumber: '',
-    expirationDate: '',
-    cvvCode: '',
-    cardHolderName: '',
-  })
+  // Start from the saved payment so "edit" on the review page keeps what was entered
+  const [form, setForm] = useState(() => ({
+    ...payment,
+    creditCardNumber: formatCardNumber(payment.creditCardNumber),
+  }))
   const [errors, setErrors] = useState({})
 
   const handleChange = (field, formatter) => (event) => {
