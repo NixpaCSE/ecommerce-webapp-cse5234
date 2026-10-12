@@ -4,8 +4,8 @@ import { FiArrowRight, FiCheck, FiEye, FiShoppingBag } from 'react-icons/fi'
 import products from '../data/products.js'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
-import Swatch from './Swatch.jsx'
 import ProductPreview from './ProductPreview.jsx'
+import Bubbles from './Bubbles.jsx'
 
 function Purchase() {
   const { cart, cartCount, cartTotal, addToCart } = useOrder()
@@ -41,6 +41,7 @@ function Purchase() {
   return (
     <section>
       <div className="hero">
+        <Bubbles />
         <h1 className="hero-title">boba kits</h1>
         <div className="hero-row">
           <FiArrowRight className="hero-arrow" aria-hidden="true" />
@@ -66,17 +67,23 @@ function Purchase() {
                   onClick={() => setPreviewProduct(product)}
                   aria-label={`Preview ${product.name}`}
                 >
-                  <Swatch gradient={product.gradient} />
+                  <img src={product.image} alt={product.name} loading="lazy" />
                   <span className="preview-hint">
                     <FiEye /> click to preview
                   </span>
                 </button>
-                <FiEye className="preview-icon" aria-hidden="true" />
                 {inCart > 0 && <span className="in-cart-badge">{inCart} in cart</span>}
               </div>
 
               <div className="product-body">
-                <h2 className="product-name">{product.name}</h2>
+                <h2 className="product-name">
+                  <span
+                    className="flavor-dot"
+                    style={{ '--swatch': product.gradient }}
+                    aria-hidden="true"
+                  />
+                  {product.name}
+                </h2>
                 <p className="product-description">{product.description}</p>
                 <p className="product-price">{formatPrice(product.price)}</p>
               </div>
