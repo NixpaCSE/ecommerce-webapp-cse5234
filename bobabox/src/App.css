@@ -1422,3 +1422,165 @@
 .cart-footer .primary-button {
   width: 100%;
 }
+
+/* ---------- About page ---------- */
+
+.about-intro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.about-card,
+.about-strategy,
+.exec-card {
+  border-radius: 28px;
+}
+
+.about-card,
+.exec-card {
+  background: var(--surface);
+}
+
+.about-card {
+  padding: 28px;
+}
+
+.about-kicker {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.about-card h2,
+.about-strategy h2 {
+  margin-bottom: 10px;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+}
+
+.about-card p,
+.about-strategy p,
+.exec-blurb {
+  margin: 0;
+  color: var(--muted);
+}
+
+.about-strategy {
+  margin-bottom: 64px;
+  padding: 32px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.about-strategy .about-kicker {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.about-strategy p {
+  max-width: 760px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.08rem;
+}
+
+.about-section-title {
+  margin-bottom: 28px;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+}
+
+.exec-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.exec-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 12px 24px;
+}
+
+.exec-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.exec-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 18px 10px 0;
+}
+
+.exec-body h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.exec-title {
+  margin: 4px 0 12px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.exec-title.is-placeholder {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.exec-blurb {
+  margin-bottom: 16px;
+}
+
+.exec-facts {
+  display: grid;
+  gap: 12px;
+  margin: auto 0 0;
+}
+
+.exec-facts div {
+  display: grid;
+  gap: 2px;
+}
+
+.exec-facts dt {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.exec-facts dd {
+  margin: 0;
+}
+
+.about-cta {
+  margin-top: 36px;
+}
+
+@media (max-width: 900px) {
+  .about-intro,
+  .exec-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-card,
+  .about-strategy {
+    padding: 22px;
+  }
+}
