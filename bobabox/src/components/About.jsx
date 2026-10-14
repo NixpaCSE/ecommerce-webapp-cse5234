@@ -27,13 +27,13 @@ const executives = [
   },
   {
     name: 'Yukun Wang',
-    title: 'Coming soon',
+    title: 'Chief Information Officer',
     image: '/images/yukun-wang.jpg',
     imagePosition: 'center 18%',
-    blurb: 'Yukun’s title and story are on the way.',
-    education: 'Coming soon',
-    experience: 'Coming soon',
-    passion: 'Coming soon',
+    blurb: 'Yukun is the person to call for any and all software issues at the store site.',
+    education: 'Computer Science and Engineering, The Ohio State University',
+    experience: 'Software Engineer at Winbond',
+    passion: 'Making boba box a better place for everyone.',
   },
 ]
 
