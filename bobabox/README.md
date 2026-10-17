@@ -37,6 +37,7 @@ Try to only edit your own page file so we don't get merge conflicts.
 | `/purchase/shippingEntry` | `src/components/ShippingEntry.jsx` | Stub |
 | `/purchase/viewOrder` | `src/components/ViewOrder.jsx` | Stub |
 | `/purchase/viewConfirmation` | `src/components/Confirmation.jsx` | Stub |
+| `/contact` | `src/components/Contact.jsx` | After-sale support, returns, and FAQ |
 
 Routes are defined in `src/App.jsx`. Each stub has a TODO comment describing what it needs.
 
