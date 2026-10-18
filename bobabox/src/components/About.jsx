@@ -9,7 +9,7 @@ const executives = [
     image: '/images/nicholas-pappas.jpg',
     imagePosition: 'center 18%',
     blurb:
-      'Nicholas runs boba.box from the product promise down to the business case. He treats every kit like it has to earn its place — and he measures success by the value it creates for the people who count on it.',
+      'Nicholas runs boba.box from the product promise down to the business case. He treats every kit like it has to earn its place, and he measures success by the value it creates for the people who count on it.',
     education: 'Computer Science and Engineering, The Ohio State University',
     experience: 'Software Engineer at JPMorgan Chase',
     passion: 'Providing business value to stakeholders',
