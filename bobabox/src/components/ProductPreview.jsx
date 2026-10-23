@@ -4,7 +4,7 @@ import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
 
 // Quick-view popup with the product photo. Lets the user add to cart from here too.
-function ProductPreview({ product, onClose }) {
+function ProductPreview({ product, available, onClose }) {
   const { addToCart } = useOrder()
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
@@ -23,7 +23,7 @@ function ProductPreview({ product, onClose }) {
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (quantity <= 0) return
+    if (quantity <= 0 || (available !== undefined && quantity > available)) return
     addToCart(product, quantity)
     setAdded(true)
     setTimeout(onClose, 700)
@@ -58,11 +58,16 @@ function ProductPreview({ product, onClose }) {
                 type="number"
                 min="0"
                 className="qty-input"
+                max={available}
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
               />
             </label>
-            <button type="submit" className="primary-button" disabled={quantity <= 0 || added}>
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={quantity <= 0 || added || (available !== undefined && quantity > available)}
+            >
               {added ? (
                 <>
                   <FiCheck /> Added

@@ -156,6 +156,10 @@ def place_order(event):
         })
         total += item["price"] * quantity
 
+    # Demo-only: Lambda memory is not durable or shared across instances.
+    for item_id, quantity in requested.items():
+        find_item(item_id)["quantity"] -= quantity
+
     card = str(payment.get("creditCardNumber") or "")
     return respond(200, {
         "confirmationNumber": "BBA-" + uuid.uuid4().hex[:8].upper(),
