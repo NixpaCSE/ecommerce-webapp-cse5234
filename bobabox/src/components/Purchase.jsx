@@ -1,15 +1,19 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiArrowRight, FiCheck, FiEye, FiShoppingBag } from 'react-icons/fi'
 import products from '../data/products.js'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
+import { fetchInventory } from '../api/inventory.js'
 import ProductPreview from './ProductPreview.jsx'
 import Bubbles from './Bubbles.jsx'
 
 function Purchase() {
   const { cart, cartCount, cartTotal, addToCart } = useOrder()
   const navigate = useNavigate()
+  const [inventory, setInventory] = useState({})
+  const [inventoryError, setInventoryError] = useState('')
+  const [inventoryLoading, setInventoryLoading] = useState(true)
 
   // Quantity typed into each card, keyed by product id (not yet in the cart).
   const [quantities, setQuantities] = useState(() =>
@@ -18,6 +22,22 @@ function Purchase() {
   const [justAddedId, setJustAddedId] = useState(null)
   const [previewProduct, setPreviewProduct] = useState(null)
   const closePreview = useCallback(() => setPreviewProduct(null), [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchInventory({ signal: controller.signal })
+      .then((items) => {
+        setInventory(Object.fromEntries(items.map((item) => [item.id, item.quantity])))
+        setInventoryError('')
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') setInventoryError(error.message)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setInventoryLoading(false)
+      })
+    return () => controller.abort()
+  }, [])
 
   function handleQuantityChange(id, value) {
     const quantity = Math.max(0, Math.floor(Number(value) || 0))
@@ -86,6 +106,11 @@ function Purchase() {
                 </h2>
                 <p className="product-description">{product.description}</p>
                 <p className="product-price">{formatPrice(product.price)}</p>
+                {inventory[product.id] !== undefined && (
+                  <p className="product-description" aria-live="polite">
+                    {inventory[product.id]} in stock
+                  </p>
+                )}
               </div>
 
               <div className="product-actions">
@@ -102,7 +127,10 @@ function Purchase() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={quantities[product.id] <= 0}
+                  disabled={quantities[product.id] <= 0 || (
+                    inventory[product.id] !== undefined &&
+                    quantities[product.id] + inCart > inventory[product.id]
+                  )}
                 >
                   {justAddedId === product.id ? (
                     <>
@@ -117,6 +145,9 @@ function Purchase() {
           )
         })}
       </div>
+
+      {inventoryLoading && <p role="status">Loading inventory…</p>}
+      {inventoryError && <p className="form-error-summary" role="alert">Could not load inventory: {inventoryError}</p>}
 
       <div className="checkout-bar">
         <div className="checkout-summary">
@@ -135,7 +166,17 @@ function Purchase() {
         </button>
       </div>
 
-      {previewProduct && <ProductPreview product={previewProduct} onClose={closePreview} />}
+      {previewProduct && (
+        <ProductPreview
+          product={previewProduct}
+          available={
+            inventory[previewProduct.id] === undefined
+              ? undefined
+              : inventory[previewProduct.id] - quantityInCart(previewProduct.id)
+          }
+          onClose={closePreview}
+        />
+      )}
     </section>
   )
 }

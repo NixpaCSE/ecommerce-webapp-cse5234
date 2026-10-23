@@ -66,6 +66,27 @@ const {
 
 The cart is also saved to `localStorage`, so it survives a page refresh.
 
+## Inventory and order API
+
+The purchase page reads inventory from the deployed API Gateway, and the order
+review page submits an order before showing the confirmation page. The current
+default API base URL is the deployed `test` stage. To point at another stage,
+set `VITE_API_BASE_URL` in a local `.env.local` file, for example:
+
+```env
+VITE_API_BASE_URL=https://your-api-id.execute-api.us-east-1.amazonaws.com/test
+```
+
+The frontend calls `GET /inventory-management/inventory/` and
+`POST /order-processing/order`. The order API must have that route deployed and
+allow `POST` plus the browser's CORS preflight. The demo Lambda sends only the
+last four card digits and does not process payment.
+
+The Lambda's inventory is hardcoded in process memory. The order handler
+decrements it after a successful order, but Lambda cold starts and scaling can
+reset or split those values. Use a persistent store such as DynamoDB with
+conditional updates before relying on inventory counts for real orders.
+
 ## Styling
 
 Keep pages consistent with the purchase page (white background, black text, light gray cards):

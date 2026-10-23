@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiArrowRight, FiCheck } from 'react-icons/fi'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
+import { ApiError, submitOrder } from '../api/inventory.js'
 
 function formatCardNumber(value) {
   const digits = value.replace(/\D/g, '')
@@ -9,11 +11,27 @@ function formatCardNumber(value) {
 }
 
 function ViewOrder() {
-  const { cart, cartTotal, payment, shipping } = useOrder()
+  const { cart, cartTotal, payment, shipping, setOrderConfirmation } = useOrder()
   const navigate = useNavigate()
+  const [submitting, setSubmitting] = useState(false)
+  const [orderError, setOrderError] = useState('')
 
-  function handleConfirm() {
-    navigate('/purchase/viewConfirmation')
+  async function handleConfirm() {
+    setSubmitting(true)
+    setOrderError('')
+    try {
+      const confirmation = await submitOrder({ cart, payment, shipping })
+      setOrderConfirmation(confirmation)
+      navigate('/purchase/viewConfirmation')
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        setOrderError(`${error.message}. ${error.payload.available} available for ${error.payload.name}.`)
+      } else {
+        setOrderError(error.message || 'Unable to place the order. Please try again.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -110,10 +128,11 @@ function ViewOrder() {
         <button type="button" className="secondary-button" onClick={() => navigate('/purchase/shippingEntry')}>
           <FiArrowLeft /> Back
         </button>
-        <button type="button" className="primary-button" onClick={handleConfirm}>
-          Place order <FiArrowRight />
+        <button type="button" className="primary-button" onClick={handleConfirm} disabled={submitting}>
+          {submitting ? 'Placing order…' : <>Place order <FiArrowRight /></>}
         </button>
       </div>
+      {orderError && <p className="form-error-summary" role="alert">{orderError}</p>}
 
       <p className="checkout-note">
         <FiCheck /> Secure checkout. Your payment details are never stored by this demo.

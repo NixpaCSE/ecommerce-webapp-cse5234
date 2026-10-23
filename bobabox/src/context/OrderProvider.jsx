@@ -35,6 +35,7 @@ export function OrderProvider({ children }) {
   const [cart, setCart] = useState(loadCart)
   const [payment, setPayment] = useState(emptyPayment)
   const [shipping, setShipping] = useState(emptyShipping)
+  const [orderConfirmation, setOrderConfirmation] = useState(null)
 
   useEffect(() => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
@@ -69,6 +70,7 @@ export function OrderProvider({ children }) {
     setCart([])
     setPayment(emptyPayment)
     setShipping(emptyShipping)
+    setOrderConfirmation(null)
   }
 
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0)
@@ -85,6 +87,8 @@ export function OrderProvider({ children }) {
     setPayment,
     shipping,
     setShipping,
+    orderConfirmation,
+    setOrderConfirmation,
     resetOrder,
   }
 

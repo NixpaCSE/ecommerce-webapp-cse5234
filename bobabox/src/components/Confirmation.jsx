@@ -1,17 +1,13 @@
-import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { FiCheck, FiShoppingBag } from 'react-icons/fi'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
 
 function Confirmation() {
-  const { cart, cartTotal, payment, shipping, resetOrder } = useOrder()
+  const { cart, cartTotal, payment, shipping, orderConfirmation, resetOrder } = useOrder()
   const navigate = useNavigate()
 
-  const confirmationNumber = useMemo(
-    () => `BBA-${Date.now().toString().slice(-8)}`,
-    [],
-  )
+  if (!orderConfirmation) return <Navigate to="/purchase" replace />
 
   function handleNewOrder() {
     resetOrder()
@@ -27,14 +23,14 @@ function Confirmation() {
         <p className="checkout-kicker">order received</p>
         <h1 className="checkout-title">thank you, {shipping.name.split(' ')[0]}.</h1>
         <p className="confirmation-message">
-          Your order is confirmed and a receipt has been sent to {payment.cardHolderName}.
+          Your order is confirmed for {payment.cardHolderName}.
         </p>
       </div>
 
       <div className="checkout-card confirmation-card">
         <div className="confirmation-number">
           <span>confirmation number</span>
-          <strong>{confirmationNumber}</strong>
+          <strong>{orderConfirmation.confirmationNumber}</strong>
         </div>
 
         <div className="confirmation-summary">
@@ -59,7 +55,7 @@ function Confirmation() {
 
           <div className="order-total">
             <span>total paid</span>
-            <strong>{formatPrice(cartTotal)}</strong>
+            <strong>{formatPrice(orderConfirmation.total ?? cartTotal)}</strong>
           </div>
         </div>
 
