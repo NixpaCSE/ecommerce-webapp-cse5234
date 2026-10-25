@@ -37,9 +37,13 @@ export async function fetchInventory(options) {
 }
 
 export function submitOrder({ cart, payment, shipping }) {
+  // text/plain keeps this a simple CORS request. The deployed OPTIONS method
+  // currently allows GET and OPTIONS only, so an application/json POST is
+  // blocked by the browser before the confirmation number can come back.
+  // The Lambda still parses the JSON string body.
   return request('/order-processing/order', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({
       items: cart.map(({ id, quantity }) => ({ id, quantity })),
       // This demo API does not process payments. Never send CVV or full card details.

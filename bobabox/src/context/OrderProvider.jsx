@@ -99,8 +99,12 @@ export function OrderProvider({ children }) {
     setCart((prev) => prev.filter((line) => line.id !== id))
   }
 
-  function resetOrder() {
+  function clearCart() {
     setCart([])
+  }
+
+  function resetOrder() {
+    clearCart()
     setPayment(emptyPayment)
     setShipping(emptyShipping)
     setOrderConfirmation(null)
@@ -127,6 +131,7 @@ export function OrderProvider({ children }) {
     setShipping,
     orderConfirmation,
     setOrderConfirmation,
+    clearCart,
     resetOrder,
   }
 

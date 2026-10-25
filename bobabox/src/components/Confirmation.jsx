@@ -4,10 +4,13 @@ import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
 
 function Confirmation() {
-  const { cart, cartTotal, payment, shipping, orderConfirmation, resetOrder } = useOrder()
+  const { payment, shipping, orderConfirmation, resetOrder } = useOrder()
   const navigate = useNavigate()
 
   if (!orderConfirmation) return <Navigate to="/purchase" replace />
+
+  const lines = orderConfirmation.items ?? []
+  const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0)
 
   function handleNewOrder() {
     resetOrder()
@@ -36,11 +39,11 @@ function Confirmation() {
         <div className="confirmation-summary">
           <div className="confirmation-summary-header">
             <FiShoppingBag />
-            <span>{cart.reduce((sum, line) => sum + line.quantity, 0)} items</span>
+            <span>{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
           </div>
 
           <ul className="order-lines">
-            {cart.map((line) => (
+            {lines.map((line) => (
               <li key={line.id} className="order-line">
                 <div className="order-line-main">
                   <span className="order-line-name">{line.name}</span>
@@ -55,7 +58,7 @@ function Confirmation() {
 
           <div className="order-total">
             <span>total paid</span>
-            <strong>{formatPrice(orderConfirmation.total ?? cartTotal)}</strong>
+            <strong>{formatPrice(orderConfirmation.total)}</strong>
           </div>
         </div>
 

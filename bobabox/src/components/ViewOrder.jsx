@@ -11,7 +11,7 @@ function formatCardNumber(value) {
 }
 
 function ViewOrder() {
-  const { cart, cartTotal, payment, shipping, setOrderConfirmation, reloadProducts } = useOrder()
+  const { cart, cartTotal, payment, shipping, setOrderConfirmation, clearCart, reloadProducts } = useOrder()
   const navigate = useNavigate()
   const [submitting, setSubmitting] = useState(false)
   const [orderError, setOrderError] = useState('')
@@ -22,6 +22,7 @@ function ViewOrder() {
     try {
       const confirmation = await submitOrder({ cart, payment, shipping })
       setOrderConfirmation(confirmation)
+      clearCart()
       reloadProducts()
       navigate('/purchase/viewConfirmation')
     } catch (error) {
