@@ -2,17 +2,12 @@ import { useNavigate } from 'react-router-dom'
 import { FiMinus, FiPlus, FiTrash2, FiX } from 'react-icons/fi'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
-import products from '../data/products.js'
 import Swatch from './Swatch.jsx'
-
-function gradientFor(id) {
-  return products.find((p) => p.id === id)?.gradient
-}
 
 // Slide-out cart available from every page. Lets the user change quantities
 // or remove line items at any time.
 function Cart({ open, onClose }) {
-  const { cart, cartTotal, updateQuantity, removeFromCart } = useOrder()
+  const { cart, cartTotal, updateQuantity, removeFromCart, getProduct } = useOrder()
   const navigate = useNavigate()
 
   function handleCheckout() {
@@ -37,7 +32,7 @@ function Cart({ open, onClose }) {
           <ul className="cart-lines">
             {cart.map((line) => (
               <li key={line.id} className="cart-line">
-                <Swatch gradient={gradientFor(line.id)} size="small" />
+                <Swatch gradient={getProduct(line.id)?.gradient} size="small" />
                 <div className="cart-line-info">
                   <span className="cart-line-name">{line.name}</span>
                   <span className="cart-line-price">{formatPrice(line.price)} each</span>

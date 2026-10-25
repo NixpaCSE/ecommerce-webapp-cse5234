@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { FiArrowRight, FiBox, FiCoffee, FiShoppingBag } from 'react-icons/fi'
-import products from '../data/products.js'
+import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
 import Bubbles from './Bubbles.jsx'
 
@@ -23,6 +23,8 @@ const steps = [
 ]
 
 function Home() {
+  const { products, productsLoading, productsError } = useOrder()
+
   return (
     <div className="home">
       <section className="home-hero">
@@ -82,6 +84,12 @@ function Home() {
             see all kits <FiArrowRight />
           </Link>
         </div>
+        {productsLoading && <p role="status">Loading flavors…</p>}
+        {productsError && (
+          <p className="form-error-summary" role="alert">
+            Could not load flavors from the inventory service: {productsError}
+          </p>
+        )}
         <div className="flavor-strip">
           {products.map((product) => (
             <Link key={product.id} to="/purchase" className="flavor-card">
