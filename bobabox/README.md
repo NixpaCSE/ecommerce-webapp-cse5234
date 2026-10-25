@@ -103,7 +103,7 @@ Put new styles in `src/App.css` under a comment for your page.
 
 ## Other files
 
-- `src/data/products.js` – hardcoded catalog of 5 boba kits (moves to the backend in Labs 7–8)
+- `src/api/inventory.js` – calls the inventory and order APIs (the kit catalog lives in the Lambda, not the frontend)
 - `src/components/Header.jsx` / `Cart.jsx` – top bar and slide-out cart (available on every page)
 - `src/components/Swatch.jsx` – gradient circle shown for each kit
 - `src/components/ProductPreview.jsx` – popup with the product photo (click a kit's circle)
