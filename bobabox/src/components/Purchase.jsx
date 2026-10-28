@@ -1,37 +1,35 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiArrowRight, FiCheck, FiEye, FiShoppingBag } from 'react-icons/fi'
+import {
+  FiArrowRight,
+  FiCheckCircle,
+  FiEye,
+  FiMinus,
+  FiPlus,
+  FiShoppingBag,
+} from 'react-icons/fi'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
 import ProductPreview from './ProductPreview.jsx'
 import Bubbles from './Bubbles.jsx'
 
+const LOW_STOCK = 10
+
 function Purchase() {
-  const { products, productsLoading, productsError, cart, cartCount, cartTotal, addToCart } =
-    useOrder()
+  const {
+    products,
+    productsLoading,
+    productsError,
+    cart,
+    cartCount,
+    cartTotal,
+    addToCart,
+    updateQuantity,
+  } = useOrder()
   const navigate = useNavigate()
 
-  // Quantity typed into each card, keyed by product id (not yet in the cart). Defaults to 1.
-  const [quantities, setQuantities] = useState({})
-  const quantityFor = (id) => quantities[id] ?? 1
-  const [justAddedId, setJustAddedId] = useState(null)
   const [previewProduct, setPreviewProduct] = useState(null)
   const closePreview = useCallback(() => setPreviewProduct(null), [])
-
-  function handleQuantityChange(id, value) {
-    const quantity = Math.max(0, Math.floor(Number(value) || 0))
-    setQuantities((prev) => ({ ...prev, [id]: quantity }))
-  }
-
-  function handleAddToCart(e, product) {
-    e.preventDefault()
-    const quantity = quantityFor(product.id)
-    if (quantity <= 0) return
-    addToCart(product, quantity)
-    setQuantities((prev) => ({ ...prev, [product.id]: 1 }))
-    setJustAddedId(product.id)
-    setTimeout(() => setJustAddedId((id) => (id === product.id ? null : id)), 1200)
-  }
 
   function quantityInCart(id) {
     return cart.find((line) => line.id === id)?.quantity ?? 0
@@ -60,11 +58,11 @@ function Purchase() {
       <div className="product-grid">
         {products.map((product) => {
           const inCart = quantityInCart(product.id)
+          const soldOut = product.quantity <= 0
           return (
-            <form
+            <article
               key={product.id}
-              className="product-card"
-              onSubmit={(e) => handleAddToCart(e, product)}
+              className={`product-card ${inCart > 0 ? 'selected' : ''}`}
             >
               <div className="product-image">
                 <button
@@ -78,56 +76,82 @@ function Purchase() {
                     <FiEye /> click to preview
                   </span>
                 </button>
-                {inCart > 0 && <span className="in-cart-badge">{inCart} in cart</span>}
+                {inCart > 0 && (
+                  <span className="in-cart-badge">
+                    <FiCheckCircle aria-hidden="true" /> {inCart} in cart
+                  </span>
+                )}
               </div>
 
               <div className="product-body">
-                <h2 className="product-name">
-                  <span
-                    className="flavor-dot"
-                    style={{ '--swatch': product.gradient }}
-                    aria-hidden="true"
-                  />
-                  {product.name}
-                </h2>
+                <div className="product-title-row">
+                  <h2 className="product-name">
+                    <span
+                      className="flavor-dot"
+                      style={{ '--swatch': product.gradient }}
+                      aria-hidden="true"
+                    />
+                    {product.name}
+                  </h2>
+                  <p className="product-price">{formatPrice(product.price)}</p>
+                </div>
                 <p className="product-description">{product.description}</p>
-                <p className="product-price">{formatPrice(product.price)}</p>
-                <p className="product-description" aria-live="polite">
-                  {product.quantity} in stock
-                </p>
+                <ul className="product-tags" aria-live="polite">
+                  <li className={product.quantity <= LOW_STOCK ? 'low' : ''}>
+                    {soldOut ? 'Sold out' : `${product.quantity} in stock`}
+                  </li>
+                </ul>
               </div>
 
               <div className="product-actions">
-                <label className="qty-label">
-                  Qty
-                  <input
-                    type="number"
-                    min="0"
-                    className="qty-input"
-                    value={quantityFor(product.id)}
-                    onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="primary-button"
-                  disabled={
-                    quantityFor(product.id) <= 0 ||
-                    quantityFor(product.id) + inCart > product.quantity
-                  }
-                >
-                  {justAddedId === product.id ? (
-                    <>
-                      <FiCheck /> Added
-                    </>
-                  ) : (
-                    'Add to cart'
-                  )}
-                </button>
+                {inCart === 0 ? (
+                  <button
+                    type="button"
+                    className="product-add"
+                    disabled={soldOut}
+                    onClick={() => addToCart(product, 1)}
+                  >
+                    <FiPlus aria-hidden="true" /> Add to cart
+                  </button>
+                ) : (
+                  <div className="product-stepper">
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(product.id, inCart - 1)}
+                      aria-label={`Remove one ${product.name}`}
+                    >
+                      <FiMinus />
+                    </button>
+                    <span aria-live="polite">{inCart} in cart</span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(product.id, inCart + 1)}
+                      disabled={inCart >= product.quantity}
+                      aria-label={`Add one more ${product.name}`}
+                    >
+                      <FiPlus />
+                    </button>
+                  </div>
+                )}
               </div>
-            </form>
+            </article>
           )
         })}
+        {products.length > 0 && (
+          <article className="product-card coming-soon-card">
+            <img
+              className="coming-soon-art"
+              src="/images/illustrations/coming-soon.svg"
+              alt=""
+            />
+            <span className="coming-soon-kicker">In the works</span>
+            <h2>More flavors coming soon</h2>
+            <p>
+              We’re testing new recipes in our kitchen. Check back for seasonal
+              and limited-run kits.
+            </p>
+          </article>
+        )}
       </div>
 
       <div className="checkout-bar">

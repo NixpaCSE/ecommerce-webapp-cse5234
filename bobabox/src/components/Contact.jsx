@@ -11,7 +11,7 @@ const faqs = [
   {
     question: 'My order arrived damaged, incorrect, or incomplete. What should I do?',
     answer:
-      'Contact us within 7 days of delivery at support@bobabox.example. Include your order number, a brief description, and clear photos of the shipping box and items so we can review the issue and arrange a suitable replacement or refund.',
+      'Contact us within 7 days of delivery at support@bobabox.com. Include your order number, a brief description, and clear photos of the shipping box and items so we can review the issue and arrange a suitable replacement or refund.',
   },
   {
     question: 'Can I return a kit?',
@@ -47,6 +47,7 @@ function Contact() {
 
       <div className="contact-grid">
         <article className="contact-card contact-card-primary">
+          <img className="tile-art" src="/images/illustrations/support.svg" alt="" />
           <span className="contact-kicker">Order support</span>
           <h2>Let’s sort it out.</h2>
           <p>
@@ -56,10 +57,10 @@ function Contact() {
           </p>
           <a
             className="contact-email"
-            href="mailto:support@bobabox.example?subject=boba.box%20order%20support"
+            href="mailto:support@bobabox.com?subject=boba.box%20order%20support"
           >
             <FiMail aria-hidden="true" />
-            support@bobabox.example
+            support@bobabox.com
           </a>
           <p className="contact-response">
             We aim to reply within 1–2 business days.
@@ -67,6 +68,7 @@ function Contact() {
         </article>
 
         <article className="contact-card">
+          <img className="tile-art" src="/images/illustrations/include.svg" alt="" />
           <span className="contact-kicker">A smoother resolution</span>
           <h2>What to include</h2>
           <ul className="contact-list">
@@ -75,31 +77,18 @@ function Contact() {
             <li>Photos for damage, missing items, or product concerns</li>
           </ul>
         </article>
-      </div>
 
-      <section className="contact-policy" aria-labelledby="returns-heading">
-        <div>
+        <article className="contact-card" aria-labelledby="returns-heading">
+          <img className="tile-art" src="/images/illustrations/returns.svg" alt="" />
           <span className="contact-kicker">Returns &amp; issues</span>
           <h2 id="returns-heading">A fair, straightforward policy.</h2>
-        </div>
-        <div className="contact-policy-copy">
           <p>
-            Unopened kits may be eligible for return within 30 days of delivery.
-            Please contact us first for approval and return instructions; items
-            sent back without authorization may not be accepted.
+            Unopened kits can be returned within 30 days. Just email us first.
+            Damaged or wrong orders? Let us know within 7 days and we’ll make
+            it right.
           </p>
-          <p>
-            If an order arrives damaged, incorrect, or incomplete, let us know
-            within 7 days. Opened food items are not returnable, but we will
-            review quality and safety concerns and help with an appropriate
-            resolution.
-          </p>
-          <p>
-            Approved refunds go to the original payment method and can take
-            5–10 business days to appear, depending on your provider.
-          </p>
-        </div>
-      </section>
+        </article>
+      </div>
 
       <section className="contact-faq" aria-labelledby="faq-heading">
         <div className="contact-faq-heading">

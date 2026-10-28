@@ -1,23 +1,23 @@
 import { Link } from 'react-router-dom'
-import { FiArrowRight, FiBox, FiCoffee, FiShoppingBag } from 'react-icons/fi'
+import { FiArrowRight } from 'react-icons/fi'
 import { useOrder } from '../context/useOrder.js'
 import { formatPrice } from '../utils/format.js'
 import Bubbles from './Bubbles.jsx'
 
 const steps = [
   {
-    icon: FiShoppingBag,
-    title: 'pick your kits',
+    image: '/images/steps/pick.svg',
+    title: 'Pick your kits',
     text: 'Choose from five café-style flavors, from classic taro to brown sugar.',
   },
   {
-    icon: FiBox,
-    title: 'we ship it',
+    image: '/images/steps/ship.svg',
+    title: 'We ship it',
     text: 'Everything arrives in one box: tea, syrups, and quick-cook tapioca pearls.',
   },
   {
-    icon: FiCoffee,
-    title: 'make boba at home',
+    image: '/images/steps/make.svg',
+    title: 'Make boba at home',
     text: 'Ready in about 10 minutes. Each kit makes 6 drinks.',
   },
 ]
@@ -53,23 +53,26 @@ function Home() {
               </a>
             </div>
           </div>
+        </div>
 
-          <div className="home-hero-image">
-            <img
-              src="/images/hero-box.jpg"
-              alt="An open boba.box kit with tapioca pearls, Assam black tea, taro powder, and a glass of milk tea"
-            />
-          </div>
+        <div className="home-hero-image">
+          <img
+            src="/images/hero-box.jpg"
+            alt="A light blue boba.box kit box next to a brown sugar boba milk tea"
+          />
         </div>
       </section>
 
       <section id="how-it-works" className="home-section">
-        <h2 className="home-section-title">how it works</h2>
+        <div className="steps-heading">
+          <h2 className="home-section-title">how it works</h2>
+          <p>From our box to your cup in three steps.</p>
+        </div>
         <div className="steps">
-          {steps.map(({ icon: Icon, title, text }, index) => (
+          {steps.map(({ image, title, text }, index) => (
             <div key={title} className="step-card">
-              <span className="step-number">0{index + 1}</span>
-              <Icon className="step-icon" aria-hidden="true" />
+              <img className="step-art" src={image} alt="" />
+              <span className="step-number">Step {index + 1}</span>
               <h3>{title}</h3>
               <p>{text}</p>
             </div>
@@ -96,15 +99,17 @@ function Home() {
               <span className="flavor-photo">
                 <img src={product.image} alt="" loading="lazy" />
               </span>
-              <span className="flavor-name">
-                <span
-                  className="flavor-dot"
-                  style={{ '--swatch': product.gradient }}
-                  aria-hidden="true"
-                />
-                {product.name.replace(' Kit', '')}
+              <span className="flavor-info">
+                <span className="flavor-name">
+                  <span
+                    className="flavor-dot"
+                    style={{ '--swatch': product.gradient }}
+                    aria-hidden="true"
+                  />
+                  {product.name.replace(' Kit', '')}
+                </span>
+                <span className="flavor-price">{formatPrice(product.price)}</span>
               </span>
-              <span className="flavor-price">{formatPrice(product.price)}</span>
             </Link>
           ))}
         </div>
