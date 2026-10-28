@@ -75,7 +75,7 @@ function About() {
           <span className="about-kicker">Strategy</span>
           <h2>online only, on purpose</h2>
           <p>
-            We keep the catalog small and sell it direct. Five flavors we would order ourselves, packed as complete kits, priced so a week of drinks costs less than a week of café runs. We grow by making the next order obvious: better recipes, clearer kits, and service that treats every customer like a stakeholder.
+            We keep the catalog small and sell it direct: five flavors we would order ourselves, priced so a week of drinks costs less than a week of café runs. We grow by making the next order obvious.
           </p>
         </article>
       </div>
