@@ -17,9 +17,6 @@ ITEM is matched on its primary key. The confirmation number returned to the
 client is BBA- plus CUSTOMER_ORDER.CONFIRMATION_CODE, a random code that the
 database guarantees is unique through a UNIQUE constraint. Run this first:
 
-  ALTER TABLE CUSTOMER_ORDER ADD COLUMN CONFIRMATION_CODE varchar(20) NULL;
-  ALTER TABLE CUSTOMER_ORDER ADD CONSTRAINT UQ_CUSTOMER_ORDER_CONFIRMATION_CODE
-      UNIQUE (CONFIRMATION_CODE);
 
 ITEM.IMAGE_URL holds the public S3 URL for each kit photo. ITEM has no
 gradient column, so that response field is an empty string.
