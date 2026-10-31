@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { FiMenu, FiShoppingBag, FiX } from 'react-icons/fi'
 import { useOrder } from '../context/useOrder.js'
 
@@ -14,9 +14,20 @@ function Header({ onCartClick }) {
   const { cartCount } = useOrder()
   const [menuOpen, setMenuOpen] = useState(false)
   const closeMenu = () => setMenuOpen(false)
+  const { pathname } = useLocation()
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const overHero = pathname === '/' && !scrolled && !menuOpen
 
   return (
-    <header className="header">
+    <header className={`header ${overHero ? 'header-over-hero' : ''}`}>
       <Link to="/" className="brand" aria-label="boba.box home" onClick={closeMenu}>
         boba<span className="brand-dot" aria-hidden="true" />box
       </Link>

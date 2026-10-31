@@ -12,6 +12,7 @@ import Confirmation from './components/Confirmation.jsx'
 import About from './components/About.jsx'
 import Contact from './components/Contact.jsx'
 import Footer from './components/Footer.jsx'
+import ScrollManager from './components/ScrollManager.jsx'
 
 function App() {
   const [cartOpen, setCartOpen] = useState(false)
@@ -19,6 +20,7 @@ function App() {
 
   return (
     <div className="app">
+      <ScrollManager />
       <Header onCartClick={() => setCartOpen(true)} />
       <Cart open={cartOpen} onClose={() => setCartOpen(false)} />
 

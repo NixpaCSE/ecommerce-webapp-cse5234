@@ -6,6 +6,8 @@
   --border: #dde9f1;
   --sky: linear-gradient(160deg, #cbe7f5 0%, #b2d9ed 55%, #a3cde9 100%);
   --sky-text: #2b3f4d;
+  --accent: #1d5fa8;
+  --accent-dark: #164c88;
   --danger: #e5484d;
   --brand-gradient: linear-gradient(135deg, #c6f04d, #ff7a1a 45%, #7c4dff);
 

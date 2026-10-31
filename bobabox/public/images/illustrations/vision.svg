@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" fill="none">
+  <circle cx="104" cy="90" r="80" fill="#eef3f8"/>
+  <path d="M112 50l12-30" stroke="#3b8fdc" stroke-width="7" stroke-linecap="round"/>
+  <rect x="80" y="46" width="60" height="10" rx="4" fill="#fff" stroke="#c3ced8" stroke-width="2"/>
+  <path d="M84 56h52l-6.5 86a6 6 0 0 1-6 5.5h-27a6 6 0 0 1-6-5.5z" fill="#fff" stroke="#c3ced8" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M86.5 70h47l-5 70a4 4 0 0 1-4 3.6h-29a4 4 0 0 1-4-3.6z" fill="#e8d9c8"/>
+  <g fill="#4a3b33">
+    <circle cx="99" cy="134" r="3.6"/>
+    <circle cx="107" cy="137" r="3.6"/>
+    <circle cx="115" cy="134" r="3.6"/>
+    <circle cx="122" cy="137" r="3.2"/>
+    <circle cx="103" cy="127" r="3.6"/>
+    <circle cx="111" cy="128" r="3.6"/>
+    <circle cx="119" cy="127" r="3.6"/>
+  </g>
+  <path d="M110 92c-4-6-14-3-12 5 1.5 5 12 12 12 12s10.5-7 12-12c2-8-8-11-12-5z" fill="#3b8fdc"/>
+  <path d="M168 54l3.5 9 9 3.5-9 3.5-3.5 9-3.5-9-9-3.5 9-3.5z" fill="#3b8fdc"/>
+  <path d="M186 92l2.2 5.6 5.6 2.2-5.6 2.2-2.2 5.6-2.2-5.6-5.6-2.2 5.6-2.2z" fill="#9fbfdc"/>
+  <path d="M158 112l1.8 4.4 4.4 1.8-4.4 1.8-1.8 4.4-1.8-4.4-4.4-1.8 4.4-1.8z" fill="#c3ced8"/>
+</svg>

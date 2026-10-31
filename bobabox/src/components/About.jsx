@@ -53,6 +53,7 @@ function About() {
 
       <div className="about-intro">
         <article className="about-card">
+          <img className="tile-art" src="/images/illustrations/mission.svg" alt="" />
           <span className="about-kicker">Mission</span>
           <h2>boba worth making at home</h2>
           <p>
@@ -61,38 +62,42 @@ function About() {
         </article>
 
         <article className="about-card">
+          <img className="tile-art" src="/images/illustrations/vision.svg" alt="" />
           <span className="about-kicker">Vision</span>
           <h2>the best cup is the one you made</h2>
           <p>
             We want boba.box to be the kit people reach for when they want the drink they already love. One box at the door, and a cup that tastes like it came from the café.
           </p>
         </article>
-      </div>
 
-      <article className="about-strategy">
-        <span className="about-kicker">Strategy</span>
-        <h2>online only, on purpose</h2>
-        <p>
-          We keep the catalog small and sell it direct. Five flavors we would order ourselves, packed as complete kits, priced so a week of drinks costs less than a week of café runs. We grow by making the next order obvious: better recipes, clearer kits, and service that treats every customer like a stakeholder.
-        </p>
-      </article>
+        <article className="about-card">
+          <img className="tile-art" src="/images/illustrations/strategy.svg" alt="" />
+          <span className="about-kicker">Strategy</span>
+          <h2>online only, on purpose</h2>
+          <p>
+            We keep the catalog small and sell it direct: five flavors we would order ourselves, priced so a week of drinks costs less than a week of café runs. We grow by making the next order obvious.
+          </p>
+        </article>
+      </div>
 
       <h2 className="about-section-title">meet our executives</h2>
       <div className="exec-grid">
         {executives.map((person) => (
           <article key={person.name} className="exec-card">
-            <img
-              className="exec-photo"
-              src={person.image}
-              alt={`Portrait of ${person.name}`}
-              style={{ objectPosition: person.imagePosition }}
-            />
-
-            <div className="exec-body">
+            <div className="exec-polaroid">
+              <img
+                className="exec-photo"
+                src={person.image}
+                alt={`Portrait of ${person.name}`}
+                style={{ objectPosition: person.imagePosition }}
+              />
               <h3>{person.name}</h3>
               <p className={`exec-title ${person.title === 'Coming soon' ? 'is-placeholder' : ''}`}>
                 {person.title}
               </p>
+            </div>
+
+            <div className="exec-body">
               <p className="exec-blurb">{person.blurb}</p>
               <dl className="exec-facts">
                 <div>
