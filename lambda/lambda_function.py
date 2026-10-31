@@ -14,13 +14,21 @@ DB_PASSWORD on the function. PyMySQL is not part of the Lambda runtime;
 attach a layer that contains it before testing.
 
 ITEM is matched on its primary key. The confirmation number returned to the
-client is BBA- plus the new CUSTOMER_ORDER.ID. ITEM.IMAGE_URL holds the public
-S3 URL for each kit photo. ITEM has no gradient column, so that field is empty.
+client is BBA- plus CUSTOMER_ORDER.CONFIRMATION_CODE, a random code that the
+database guarantees is unique through a UNIQUE constraint. Run this first:
+
+  ALTER TABLE CUSTOMER_ORDER ADD COLUMN CONFIRMATION_CODE varchar(20) NULL;
+  ALTER TABLE CUSTOMER_ORDER ADD CONSTRAINT UQ_CUSTOMER_ORDER_CONFIRMATION_CODE
+      UNIQUE (CONFIRMATION_CODE);
+
+ITEM.IMAGE_URL holds the public S3 URL for each kit photo. ITEM has no
+gradient column, so that response field is an empty string.
 """
 
 import base64
 import json
 import os
+import secrets
 
 try:
     import pymysql
@@ -34,7 +42,17 @@ HEADERS = {
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 }
 
+# No 0/O/1/I/L, so codes are easy to read aloud or type from an email.
+CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+CODE_LENGTH = 8
+CODE_ATTEMPTS = 5
+UNIQUE_INDEX = "UQ_CUSTOMER_ORDER_CONFIRMATION_CODE"
+
 _connection = None
+
+
+def new_confirmation_code():
+    return "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
 
 
 def respond(status, payload):
@@ -294,20 +312,40 @@ def place_order(connection, event):
             )
             payment_id = cursor.lastrowid
 
-            cursor.execute(
-                """
-                INSERT INTO CUSTOMER_ORDER
-                    (CUSTOMER_NAME, CUSTOMER_EMAIL, SHIPPING_INFO_ID_FK, PAYMENT_INFO_ID_FK, STATUS)
-                VALUES (%s, %s, %s, %s, 'New')
-                """,
-                (
-                    field(shipping, "name", "customerName"),
-                    field(shipping, "email"),
-                    shipping_id,
-                    payment_id,
-                ),
-            )
-            order_id = cursor.lastrowid
+            # The UNIQUE constraint on CONFIRMATION_CODE is what guarantees
+            # uniqueness. If a random code ever collides, MySQL rejects only
+            # this INSERT (the rest of the transaction stays intact) and we
+            # try a fresh code.
+            order_id = None
+            confirmation_code = None
+            for _ in range(CODE_ATTEMPTS):
+                confirmation_code = new_confirmation_code()
+                try:
+                    cursor.execute(
+                        """
+                        INSERT INTO CUSTOMER_ORDER
+                            (CUSTOMER_NAME, CUSTOMER_EMAIL, SHIPPING_INFO_ID_FK,
+                             PAYMENT_INFO_ID_FK, STATUS, CONFIRMATION_CODE)
+                        VALUES (%s, %s, %s, %s, 'New', %s)
+                        """,
+                        (
+                            field(shipping, "name", "customerName"),
+                            field(shipping, "email"),
+                            shipping_id,
+                            payment_id,
+                            confirmation_code,
+                        ),
+                    )
+                    order_id = cursor.lastrowid
+                    break
+                except pymysql.err.IntegrityError as exc:
+                    # 1062 = duplicate key. Only retry if it was our code.
+                    if exc.args[0] == 1062 and UNIQUE_INDEX in str(exc):
+                        continue
+                    raise
+
+            if order_id is None:
+                raise RuntimeError("Could not generate a unique confirmation code")
 
             for line in ordered:
                 cursor.execute(
@@ -326,7 +364,7 @@ def place_order(connection, event):
 
     card = field(payment, "creditCardNumber", "cardNumber")
     return respond(200, {
-        "confirmationNumber": f"BBA-{order_id}",
+        "confirmationNumber": f"BBA-{confirmation_code}",
         "items": [
             {
                 "id": line["id"],
