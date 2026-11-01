@@ -65,8 +65,8 @@ ALTER TABLE CUSTOMER_ORDER
 -- Current ITEM rows from the inventory API. Quantities are the live stock
 -- (orders already reduced Taro and Brown Sugar to 0, and the other kits to 49).
 INSERT INTO ITEM (ID, ITEM_NUMBER, NAME, DESCRIPTION, AVAILABLE_QUANTITY, UNIT_PRICE, IMAGE_URL) VALUES
-(1, 1, 'Strawberry Milk Tea Kit', 'Real strawberry purée, black tea, and tapioca pearls. Makes 6 drinks.', 49, 22.49, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/strawberry.jpg'),
-(2, 2, 'Taro Milk Tea Kit', 'Real taro powder, jasmine tea, and tapioca pearls. Makes 6 drinks.', 0, 23.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/taro.jpg'),
-(3, 3, 'Brown Sugar Boba Kit', 'Slow-cooked brown sugar syrup and tapioca pearls. Just add milk. Makes 6 drinks.', 0, 24.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/brown-sugar.jpg'),
-(4, 4, 'Matcha Latte Kit', 'Ceremonial-grade matcha, cane syrup, and tapioca pearls. Makes 6 drinks.', 49, 26.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/matcha.jpg'),
-(5, 5, 'Mango Green Tea Kit', 'Jasmine green tea, mango syrup, and popping boba. Makes 6 drinks.', 49, 22.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/mango.jpg');
+(1, 1, 'Strawberry Milk Tea Kit', 'Real strawberry purée, black tea, and tapioca pearls. Makes 6 drinks.', 50, 22.49, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/strawberry.jpg'),
+(2, 2, 'Taro Milk Tea Kit', 'Real taro powder, jasmine tea, and tapioca pearls. Makes 6 drinks.', 50, 23.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/taro.jpg'),
+(3, 3, 'Brown Sugar Boba Kit', 'Slow-cooked brown sugar syrup and tapioca pearls. Just add milk. Makes 6 drinks.', 50, 24.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/brown-sugar.jpg'),
+(4, 4, 'Matcha Latte Kit', 'Ceremonial-grade matcha, cane syrup, and tapioca pearls. Makes 6 drinks.', 50, 26.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/matcha.jpg'),
+(5, 5, 'Mango Green Tea Kit', 'Jasmine green tea, mango syrup, and popping boba. Makes 6 drinks.', 50, 22.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/mango.jpg');
