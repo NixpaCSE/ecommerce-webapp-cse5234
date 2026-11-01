@@ -15,8 +15,7 @@ attach a layer that contains it before testing.
 
 ITEM is matched on its primary key. The confirmation number returned to the
 client is BBA- plus CUSTOMER_ORDER.CONFIRMATION_CODE, a random code that the
-database guarantees is unique through a UNIQUE constraint. Run this first:
-
+database guarantees is unique through a UNIQUE constraint.
 
 ITEM.IMAGE_URL holds the public S3 URL for each kit photo. ITEM has no
 gradient column, so that response field is an empty string.
