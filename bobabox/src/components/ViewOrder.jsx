@@ -114,6 +114,10 @@ function ViewOrder() {
               <dd>{shipping.name}</dd>
             </div>
             <div>
+              <dt>email</dt>
+              <dd>{shipping.email}</dd>
+            </div>
+            <div>
               <dt>address</dt>
               <dd>
                 {shipping.addressLine1}

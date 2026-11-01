@@ -12,9 +12,10 @@ const US_STATES = [
 // Allow digits and a hyphen only, e.g. "43215" or "43215-1234"
 const formatZip = (value) => value.replace(/[^\d-]/g, '').slice(0, 10)
 
-function validate({ name, addressLine1, city, state, zip }) {
+function validate({ name, email, addressLine1, city, state, zip }) {
   const errors = {}
   if (name.trim().length < 2) errors.name = 'Enter the recipient\u2019s full name.'
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = 'Enter a valid email address.'
   if (addressLine1.trim().length < 3) errors.addressLine1 = 'Enter a street address.'
   if (city.trim().length < 2) errors.city = 'Enter a city.'
   if (!US_STATES.includes(state)) errors.state = 'Choose a state.'
@@ -27,7 +28,7 @@ function ShippingEntry() {
   const navigate = useNavigate()
 
   // Start from the saved shipping info so "edit" on the review page keeps what was entered
-  const [form, setForm] = useState(shipping)
+  const [form, setForm] = useState({ email: '', ...shipping })
   const [errors, setErrors] = useState({})
 
   const handleChange = (field, formatter) => (event) => {
@@ -45,6 +46,7 @@ function ShippingEntry() {
 
     setShipping({
       name: form.name.trim(),
+      email: form.email.trim(),
       addressLine1: form.addressLine1.trim(),
       addressLine2: form.addressLine2.trim(),
       city: form.city.trim(),
@@ -78,6 +80,22 @@ function ShippingEntry() {
             aria-describedby={errors.name ? 'name-error' : undefined}
           />
           {errors.name && <p id="name-error" className="field-error" role="alert">{errors.name}</p>}
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            className={errors.email ? 'invalid' : ''}
+            value={form.email}
+            onChange={handleChange('email')}
+            aria-invalid={Boolean(errors.email)}
+            aria-describedby={errors.email ? 'email-error' : undefined}
+          />
+          {errors.email && <p id="email-error" className="field-error" role="alert">{errors.email}</p>}
         </div>
 
         <div className="form-field">
