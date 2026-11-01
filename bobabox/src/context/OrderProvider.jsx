@@ -16,6 +16,7 @@ const emptyPayment = {
 
 const emptyShipping = {
   name: '',
+  email: '',
   addressLine1: '',
   addressLine2: '',
   city: '',
