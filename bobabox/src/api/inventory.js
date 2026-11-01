@@ -46,10 +46,11 @@ export function submitOrder({ cart, payment, shipping }) {
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({
       items: cart.map(({ id, quantity }) => ({ id, quantity })),
-      // This demo API does not process payments. The CVV is never sent or stored.
+      // This demo API does not process payments. Only the last 4 card digits are
+      // sent, and the CVV is never sent or stored.
       payment: {
         cardHolderName: payment.cardHolderName,
-        creditCardNumber: payment.creditCardNumber,
+        creditCardNumber: payment.creditCardNumber.slice(-4),
         expirationDate: payment.expirationDate,
       },
       shipping,
