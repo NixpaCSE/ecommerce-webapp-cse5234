@@ -65,6 +65,10 @@ ALTER TABLE CUSTOMER_ORDER
 ALTER TABLE CUSTOMER_ORDER
   ADD CONSTRAINT UQ_CUSTOMER_ORDER_CONFIRMATION_CODE UNIQUE (CONFIRMATION_CODE);
 
+-- Token returned by the payment service. The card number stays in payment_service.
+ALTER TABLE CUSTOMER_ORDER
+  ADD COLUMN PAYMENT_TOKEN varchar(32) NULL;
+
 -- Catalog seed. Each kit starts at 50 in stock.
 -- To restock a live database without dropping orders, run replenish_items.sql instead.
 INSERT INTO ITEM (ID, ITEM_NUMBER, NAME, DESCRIPTION, AVAILABLE_QUANTITY, UNIT_PRICE, IMAGE_URL) VALUES
