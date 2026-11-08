@@ -45,6 +45,9 @@ CREATE TABLE PAYMENT_INFO (
   CVV varchar(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Address the customer typed, stored with the storefront order.
+-- The shipping company does not read this table. Its database is
+-- shipping_service (see shipping_schema.sql).
 CREATE TABLE SHIPPING_INFO (
   ID int auto_increment primary key,
   ADDRESS1 varchar(255),
@@ -62,11 +65,15 @@ ALTER TABLE CUSTOMER_ORDER
 ALTER TABLE CUSTOMER_ORDER
   ADD CONSTRAINT UQ_CUSTOMER_ORDER_CONFIRMATION_CODE UNIQUE (CONFIRMATION_CODE);
 
--- Current ITEM rows from the inventory API. Quantities are the live stock
--- (orders already reduced Taro and Brown Sugar to 0, and the other kits to 49).
+-- Token returned by the payment service. The card number stays in payment_service.
+ALTER TABLE CUSTOMER_ORDER
+  ADD COLUMN PAYMENT_TOKEN varchar(32) NULL;
+
+-- Catalog seed. Each kit starts at 50 in stock.
+-- To restock a live database without dropping orders, run replenish_items.sql instead.
 INSERT INTO ITEM (ID, ITEM_NUMBER, NAME, DESCRIPTION, AVAILABLE_QUANTITY, UNIT_PRICE, IMAGE_URL) VALUES
-(1, 1, 'Strawberry Milk Tea Kit', 'Real strawberry purée, black tea, and tapioca pearls. Makes 6 drinks.', 50, 22.49, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/strawberry.jpg'),
-(2, 2, 'Taro Milk Tea Kit', 'Real taro powder, jasmine tea, and tapioca pearls. Makes 6 drinks.', 50, 23.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/taro.jpg'),
-(3, 3, 'Brown Sugar Boba Kit', 'Slow-cooked brown sugar syrup and tapioca pearls. Just add milk. Makes 6 drinks.', 50, 24.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/brown-sugar.jpg'),
-(4, 4, 'Matcha Latte Kit', 'Ceremonial-grade matcha, cane syrup, and tapioca pearls. Makes 6 drinks.', 50, 26.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/matcha.jpg'),
-(5, 5, 'Mango Green Tea Kit', 'Jasmine green tea, mango syrup, and popping boba. Makes 6 drinks.', 50, 22.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/mango.jpg');
+(1, 1, 'Strawberry Milk Tea Kit', 'Real strawberry purée, black tea, and tapioca pearls. Makes 6 drinks.', 50, 12.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/strawberry.jpg'),
+(2, 2, 'Taro Milk Tea Kit', 'Real taro powder, jasmine tea, and tapioca pearls. Makes 6 drinks.', 50, 12.49, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/taro.jpg'),
+(3, 3, 'Brown Sugar Boba Kit', 'Slow-cooked brown sugar syrup and tapioca pearls. Just add milk. Makes 6 drinks.', 50, 10.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/brown-sugar.jpg'),
+(4, 4, 'Matcha Latte Kit', 'Ceremonial-grade matcha, cane syrup, and tapioca pearls. Makes 6 drinks.', 50, 13.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/matcha.jpg'),
+(5, 5, 'Mango Green Tea Kit', 'Jasmine green tea, mango syrup, and popping boba. Makes 6 drinks.', 50, 11.99, 'https://bobabox-product-images.s3.us-east-1.amazonaws.com/mango.jpg');

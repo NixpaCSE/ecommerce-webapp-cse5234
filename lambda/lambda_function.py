@@ -9,9 +9,24 @@ on, to:
   GET  /inventory-management/inventory/items        (?name=)
   POST /order-processing/order
 
-Reads and writes RDS MySQL. Set DB_HOST, DB_PORT, DB_NAME, DB_USER, and
-DB_PASSWORD on the function. PyMySQL is not part of the Lambda runtime;
-attach a layer that contains it before testing.
+Reads and writes the storefront RDS MySQL database. Set DB_HOST, DB_PORT,
+DB_NAME, DB_USER, and DB_PASSWORD on the function. PyMySQL is not part of
+the Lambda runtime; attach a layer that contains it before testing.
+
+Card data is not written here. After stock is reserved, place_order POSTs
+the card to the payment Lambda at PAYMENT_API_URL and stores only the
+token that service returns on CUSTOMER_ORDER.PAYMENT_TOKEN.
+
+After that order is committed, place_order puts an OrderReadyForShipping
+event on a custom EventBridge bus and returns. It does not wait for
+shipping, and it does not call SHIPPING_API_URL. That URL is only for a
+direct POST /shipping. A rule on the custom bus invokes the shipping
+Lambda. An optional second target on the same rule is an SNS topic for
+email or SMS. The bus name is ShippingBus. Set EVENT_BUS_NAME only to
+override it. This function's role needs events:PutEvents on that bus.
+BUSINESS_ID defaults to STORE-BOBABOX.
+Each line item is one packet, weight = quantity * PACKET_UNIT_WEIGHT_LB
+(default 1.0, so 10 units is 10.00 lb).
 
 ITEM is matched on its primary key. The confirmation number returned to the
 client is BBA- plus CUSTOMER_ORDER.CONFIRMATION_CODE, a random code that the
@@ -25,6 +40,15 @@ import base64
 import json
 import os
 import secrets
+import urllib.error
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
+
+try:
+    import boto3
+except ImportError:  # Present in the Lambda runtime. Missing in the console editor.
+    boto3 = None
 
 try:
     import pymysql
@@ -44,7 +68,22 @@ CODE_LENGTH = 8
 CODE_ATTEMPTS = 5
 UNIQUE_INDEX = "UQ_CUSTOMER_ORDER_CONFIRMATION_CODE"
 
+# BobaBox's registration id with the shipping company. Sent on every
+# shipment event and stored on the shipment row. There is no business table.
+DEFAULT_BUSINESS_ID = "STORE-BOBABOX"
+# Pounds per unit. 10 units of one line item become one packet of 10.00 lb.
+UNIT_WEIGHT_LB = 1.0
+SHIPPING_EVENT_SOURCE = "bobabox.order"
+SHIPPING_EVENT_DETAIL_TYPE = "OrderReadyForShipping"
+DEFAULT_EVENT_BUS_NAME = "ShippingBus"
+
 _connection = None
+
+
+class PaymentError(Exception):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
 
 
 def new_confirmation_code():
@@ -189,6 +228,127 @@ def field(source, *names):
     return ""
 
 
+def request_payment(payment, amount):
+    """Ask the payment service to store the card and return its token.
+
+    PAYMENT_API_URL is the full POST /payments/payment URL. The payment
+    Lambda requires amount and returns paymentToken. This function never
+    writes the card number to the storefront database.
+    """
+    url = os.environ["PAYMENT_API_URL"]
+    payload = json.dumps({
+        "cardHolderName": field(payment, "cardHolderName", "holderName"),
+        "creditCardNumber": field(payment, "creditCardNumber", "cardNumber"),
+        "expirationDate": field(payment, "expirationDate", "expDate"),
+        "amount": amount,
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    def call():
+        try:
+            with urllib.request.urlopen(request, timeout=5) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            try:
+                parsed = json.loads(raw)
+                message = parsed.get("message") or raw
+                errors = parsed.get("errors")
+                if errors:
+                    message = f"{message}: {', '.join(errors)}"
+            except json.JSONDecodeError:
+                message = raw or str(exc.reason)
+            raise PaymentError(exc.code, message or "Payment request failed") from exc
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            raise PaymentError(502, f"Payment service unavailable: {exc}") from exc
+
+    # A black-holed DNS lookup ignores the socket timeout and would run
+    # until Lambda is killed. API Gateway then shows "Internal server error".
+    try:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            body = pool.submit(call).result(timeout=8)
+    except FuturesTimeout as exc:
+        raise PaymentError(502, "Payment service timed out") from exc
+
+    token = None
+    if isinstance(body, dict):
+        token = body.get("paymentToken") or body.get("token")
+    if not token:
+        raise PaymentError(502, "Payment service did not return a token")
+    return str(token)
+
+
+def shipment_street(shipping):
+    line1 = field(shipping, "addressLine1", "address1").strip()
+    line2 = field(shipping, "addressLine2", "address2").strip()
+    if line1 and line2:
+        return f"{line1}, {line2}"
+    return line1 or line2
+
+
+def custom_event_bus():
+    """Publish to ShippingBus. EVENT_BUS_NAME overrides that name."""
+    name = (os.environ.get("EVENT_BUS_NAME") or DEFAULT_EVENT_BUS_NAME).strip()
+    if not name or name.lower() == "default":
+        raise RuntimeError(
+            "EVENT_BUS_NAME must be the custom bus ShippingBus. "
+            "This function does not call SHIPPING_API_URL."
+        )
+    return name
+
+
+def publish_shipping_request(shipping, order_id, lines):
+    """Hand the order to EventBridge after it is saved. Do not wait.
+
+    PutEvents returns when the bus accepts the event. The shipping Lambda
+    runs later, from the rule, and this function never calls it or
+    SHIPPING_API_URL. One line item is one packet, however large its
+    quantity is.
+    """
+    if boto3 is None:
+        raise RuntimeError("boto3 is not available")
+
+    bus = custom_event_bus()
+    try:
+        unit_weight = float(os.environ.get("PACKET_UNIT_WEIGHT_LB", str(UNIT_WEIGHT_LB)))
+    except ValueError:
+        unit_weight = UNIT_WEIGHT_LB
+
+    packets = []
+    for index, line in enumerate(lines, start=1):
+        packets.append({
+            "lineItemId": f"L{index}",
+            "weightLb": round(line["quantity"] * unit_weight, 2),
+        })
+
+    detail = {
+        "businessId": os.environ.get("BUSINESS_ID") or DEFAULT_BUSINESS_ID,
+        "orderId": order_id,
+        "street": shipment_street(shipping),
+        "city": field(shipping, "city"),
+        "state": field(shipping, "state"),
+        "zip": field(shipping, "zip", "postalCode", "postal_code"),
+        "packets": packets,
+    }
+    result = boto3.client("events").put_events(Entries=[{
+        "Source": SHIPPING_EVENT_SOURCE,
+        "DetailType": SHIPPING_EVENT_DETAIL_TYPE,
+        "EventBusName": bus,
+        "Detail": json.dumps(detail),
+    }])
+    failed = result.get("FailedEntryCount") or 0
+    entry = (result.get("Entries") or [{}])[0]
+    if failed:
+        message = entry.get("ErrorMessage") or entry.get("ErrorCode") or "PutEvents failed"
+        raise RuntimeError(message)
+    print(f"OrderReadyForShipping accepted on {bus} for {order_id}: {entry.get('EventId')}")
+
+
 def place_order(connection, event):
     try:
         order = parse_body(event)
@@ -217,15 +377,62 @@ def place_order(connection, event):
             return respond(400, {"message": f"Quantity for item {item_id} must be at least 1"})
         requested[item_id] = requested.get(item_id, 0) + quantity
 
-    connection.begin()
+    # Price the cart before payment. Roll the read back before the HTTP
+    # call so a slow payment service cannot hold locks on ITEM.
     try:
+        priced = []
+        total = 0.0
         with connection.cursor() as cursor:
-            ordered = []
-            total = 0.0
             for item_id, quantity in requested.items():
                 cursor.execute(
                     """
                     SELECT ID, ITEM_NUMBER, NAME, UNIT_PRICE, AVAILABLE_QUANTITY
+                    FROM ITEM
+                    WHERE ID = %s
+                    """,
+                    (item_id,),
+                )
+                item = cursor.fetchone()
+                if item is None:
+                    return respond(404, {"message": "Item not found", "itemId": str(item_id)})
+
+                available = int(item["AVAILABLE_QUANTITY"] or 0)
+                if quantity > available:
+                    return respond(409, {
+                        "message": "Insufficient quantity",
+                        "itemId": str(item["ID"]),
+                        "name": item["NAME"],
+                        "requested": quantity,
+                        "available": available,
+                    })
+
+                price = float(item["UNIT_PRICE"] or 0)
+                priced.append({
+                    "id": item["ID"],
+                    "name": item["NAME"] or "",
+                    "price": price,
+                    "quantity": quantity,
+                    "item_number": item["ITEM_NUMBER"] if item["ITEM_NUMBER"] is not None else item["ID"],
+                })
+                total = round(total + price * quantity, 2)
+    finally:
+        rollback_quietly(connection)
+
+    try:
+        payment_token = request_payment(payment, total)
+    except PaymentError as exc:
+        return respond(exc.status, {"message": str(exc)})
+
+    connection.begin()
+    try:
+        with connection.cursor() as cursor:
+            ordered = []
+            for line in priced:
+                item_id = line["id"]
+                quantity = line["quantity"]
+                cursor.execute(
+                    """
+                    SELECT ID, NAME, AVAILABLE_QUANTITY
                     FROM ITEM
                     WHERE ID = %s
                     FOR UPDATE
@@ -266,15 +473,13 @@ def place_order(connection, event):
                         "available": available,
                     })
 
-                price = float(item["UNIT_PRICE"] or 0)
                 ordered.append({
-                    "id": str(item["ID"]),
-                    "name": item["NAME"] or "",
-                    "price": price,
+                    "id": str(line["id"]),
+                    "name": line["name"],
+                    "price": line["price"],
                     "quantity": quantity,
-                    "item_number": item["ITEM_NUMBER"] if item["ITEM_NUMBER"] is not None else item["ID"],
+                    "item_number": line["item_number"],
                 })
-                total = round(total + price * quantity, 2)
 
             cursor.execute(
                 """
@@ -294,20 +499,6 @@ def place_order(connection, event):
             )
             shipping_id = cursor.lastrowid
 
-            cursor.execute(
-                """
-                INSERT INTO PAYMENT_INFO (HOLDER_NAME, CARD_NUM, EXP_DATE, CVV)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (
-                    field(payment, "cardHolderName", "holderName"),
-                    field(payment, "creditCardNumber", "cardNumber"),
-                    field(payment, "expirationDate", "expDate"),
-                    field(payment, "cvvCode", "cvv"),
-                ),
-            )
-            payment_id = cursor.lastrowid
-
             # The UNIQUE constraint on CONFIRMATION_CODE is what guarantees
             # uniqueness. If a random code ever collides, MySQL rejects only
             # this INSERT (the rest of the transaction stays intact) and we
@@ -321,14 +512,14 @@ def place_order(connection, event):
                         """
                         INSERT INTO CUSTOMER_ORDER
                             (CUSTOMER_NAME, CUSTOMER_EMAIL, SHIPPING_INFO_ID_FK,
-                             PAYMENT_INFO_ID_FK, STATUS, CONFIRMATION_CODE)
+                             PAYMENT_TOKEN, STATUS, CONFIRMATION_CODE)
                         VALUES (%s, %s, %s, %s, 'New', %s)
                         """,
                         (
                             field(shipping, "name", "customerName"),
                             field(shipping, "email"),
                             shipping_id,
-                            payment_id,
+                            payment_token,
                             confirmation_code,
                         ),
                     )
@@ -354,13 +545,30 @@ def place_order(connection, event):
                 )
 
         connection.commit()
+    except PaymentError as exc:
+        rollback_quietly(connection)
+        return respond(exc.status, {"message": str(exc)})
     except Exception:
         rollback_quietly(connection)
         raise
 
+    # Validate, pay, and commit are already done. Publishing is the async
+    # step: EventBridge accepts the event and this request returns without
+    # a shipping token. A publish failure must not fail checkout, or the
+    # customer will retry and place a second order.
+    confirmation_number = f"BBA-{confirmation_code}"
+    shipping_status = "queued"
+    shipping_error = ""
+    try:
+        publish_shipping_request(shipping, confirmation_number, ordered)
+    except Exception as exc:
+        shipping_status = "not queued"
+        shipping_error = str(exc)
+        print(f"Shipping event was not published: {type(exc).__name__}: {exc}")
+
     card = field(payment, "creditCardNumber", "cardNumber")
-    return respond(200, {
-        "confirmationNumber": f"BBA-{confirmation_code}",
+    body = {
+        "confirmationNumber": confirmation_number,
         "items": [
             {
                 "id": line["id"],
@@ -372,8 +580,12 @@ def place_order(connection, event):
         ],
         "total": total,
         "shipping": shipping,
+        "shippingStatus": shipping_status,
         "cardLast4": card[-4:] if card else "",
-    })
+    }
+    if shipping_error:
+        body["shippingError"] = shipping_error
+    return respond(200, body)
 
 
 def lambda_handler(event, context):
