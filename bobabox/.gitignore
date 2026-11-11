@@ -25,3 +25,8 @@ dist-ssr
 
 # Vite cache
 .vite
+
+# amplify
+.amplify
+amplify_outputs*
+amplifyconfiguration*
