@@ -2,14 +2,22 @@
 
 Paste this file into its own AWS Lambda function (Python 3.12). The handler
 name is lambda_handler. Attach this function, with Lambda proxy integration
-on, to the existing catalog routes only:
+on, to:
 
   GET  /inventory-management/inventory
   GET  /inventory-management/inventory/items/{id}
   GET  /inventory-management/inventory/items        (?name=)
+  POST /inventory-management/inventory/reserve
+  POST /inventory-management/inventory/release
 
-The order Lambda is a separate function. It updates ITEM itself when a
-customer checks out. This function only reads the catalog.
+The storefront calls the GET routes. The order Lambda calls reserve when a
+customer checks out, and release if that checkout fails after stock was
+taken. This function is the only one that reads or writes ITEM.
+
+Reserve body: {"items": [{"id": 1, "quantity": 2}]}
+Reserve response: {"items": [{"id", "itemNumber", "name", "price", "quantity"}], "total"}
+A line that asks for more than AVAILABLE_QUANTITY returns 409 and changes
+nothing. Release adds the same quantities back.
 
 Set DB_HOST, DB_PORT, DB_NAME, DB_USER, and DB_PASSWORD. PyMySQL is not part
 of the Lambda runtime; attach a layer that contains it.
@@ -18,6 +26,7 @@ ITEM.IMAGE_URL holds the public S3 URL for each kit photo. ITEM has no
 gradient column, so that response field is an empty string.
 """
 
+import base64
 import json
 import os
 
@@ -30,7 +39,7 @@ HEADERS = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "GET,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
 }
 
 _connection = None
@@ -99,12 +108,43 @@ def parse_item_id(raw_id):
         return None
 
 
+def parse_body(event):
+    body = event.get("body")
+    if event.get("isBase64Encoded") and isinstance(body, str):
+        body = base64.b64decode(body).decode("utf-8")
+    if body is None or body == "":
+        return {}
+    if isinstance(body, dict):
+        return body
+    return json.loads(body)
+
+
+def path_segments(event):
+    chunks = []
+    for key in ("path", "rawPath", "resource"):
+        value = event.get(key)
+        if isinstance(value, str):
+            chunks.append(value)
+    params = event.get("pathParameters") or {}
+    for key in ("proxy", "action"):
+        value = params.get(key)
+        if value:
+            chunks.append(str(value))
+    segments = []
+    for chunk in chunks:
+        segments.extend(
+            part for part in chunk.lower().split("/")
+            if part and not part.startswith("{")
+        )
+    return segments
+
+
 def get_inventory(connection, event):
     try:
         return read_inventory(connection, event)
     finally:
         # Reads run inside a transaction when autocommit is off. Close it
-        # so the next request does not reuse this snapshot.
+        # so a later reserve does not reuse this snapshot.
         rollback_quietly(connection)
 
 
@@ -155,6 +195,149 @@ def read_inventory(connection, event):
         return respond(200, [to_item(row) for row in cursor.fetchall()])
 
 
+def collect_lines(lines):
+    if not lines:
+        return None, respond(400, {"message": "Request has no items"})
+
+    requested = {}
+    for line in lines:
+        item_id = parse_item_id(line.get("id"))
+        if item_id is None:
+            return None, respond(400, {"message": f"Invalid item id {line.get('id')}"})
+        try:
+            quantity = int(line.get("quantity", 0))
+        except (TypeError, ValueError):
+            return None, respond(400, {"message": f"Invalid quantity for item {item_id}"})
+        if quantity <= 0:
+            return None, respond(400, {"message": f"Quantity for item {item_id} must be at least 1"})
+        requested[item_id] = requested.get(item_id, 0) + quantity
+    return requested, None
+
+
+def lock_item(cursor, item_id):
+    cursor.execute(
+        """
+        SELECT ID, ITEM_NUMBER, NAME, UNIT_PRICE, AVAILABLE_QUANTITY
+        FROM ITEM
+        WHERE ID = %s
+        FOR UPDATE
+        """,
+        (item_id,),
+    )
+    return cursor.fetchone()
+
+
+def reserve_stock(connection, event):
+    try:
+        body = parse_body(event)
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+        return respond(400, {"message": "Request body must be JSON"})
+
+    requested, error = collect_lines(body.get("items") or [])
+    if error:
+        return error
+
+    connection.begin()
+    try:
+        priced = []
+        total = 0.0
+        with connection.cursor() as cursor:
+            for item_id, quantity in requested.items():
+                item = lock_item(cursor, item_id)
+                if item is None:
+                    connection.rollback()
+                    return respond(404, {"message": "Item not found", "itemId": str(item_id)})
+
+                available = int(item["AVAILABLE_QUANTITY"] or 0)
+                if quantity > available:
+                    connection.rollback()
+                    return respond(409, {
+                        "message": "Insufficient quantity",
+                        "itemId": str(item["ID"]),
+                        "name": item["NAME"],
+                        "requested": quantity,
+                        "available": available,
+                    })
+
+                updated = cursor.execute(
+                    """
+                    UPDATE ITEM
+                    SET AVAILABLE_QUANTITY = AVAILABLE_QUANTITY - %s
+                    WHERE ID = %s AND AVAILABLE_QUANTITY >= %s
+                    """,
+                    (quantity, item_id, quantity),
+                )
+                if updated != 1:
+                    connection.rollback()
+                    return respond(409, {
+                        "message": "Insufficient quantity",
+                        "itemId": str(item["ID"]),
+                        "name": item["NAME"],
+                        "requested": quantity,
+                        "available": available,
+                    })
+
+                price = float(item["UNIT_PRICE"] or 0)
+                priced.append({
+                    "id": str(item["ID"]),
+                    "itemNumber": item["ITEM_NUMBER"] if item["ITEM_NUMBER"] is not None else item["ID"],
+                    "name": item["NAME"] or "",
+                    "price": price,
+                    "quantity": quantity,
+                })
+                total = round(total + price * quantity, 2)
+
+        connection.commit()
+    except Exception:
+        rollback_quietly(connection)
+        raise
+
+    return respond(200, {"items": priced, "total": total})
+
+
+def release_stock(connection, event):
+    """Put reserved units back. Used when the order service cannot finish checkout."""
+    try:
+        body = parse_body(event)
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+        return respond(400, {"message": "Request body must be JSON"})
+
+    requested, error = collect_lines(body.get("items") or [])
+    if error:
+        return error
+
+    connection.begin()
+    try:
+        released = []
+        with connection.cursor() as cursor:
+            for item_id, quantity in requested.items():
+                item = lock_item(cursor, item_id)
+                if item is None:
+                    connection.rollback()
+                    return respond(404, {"message": "Item not found", "itemId": str(item_id)})
+
+                updated = cursor.execute(
+                    """
+                    UPDATE ITEM
+                    SET AVAILABLE_QUANTITY = AVAILABLE_QUANTITY + %s
+                    WHERE ID = %s
+                    """,
+                    (quantity, item_id),
+                )
+                if updated != 1:
+                    connection.rollback()
+                    return respond(404, {"message": "Item not found", "itemId": str(item_id)})
+
+                released.append({"id": str(item["ID"]), "quantity": quantity})
+
+        connection.commit()
+    except Exception:
+        rollback_quietly(connection)
+        raise
+
+    return respond(200, {"released": True, "items": released})
+
+
 def lambda_handler(event, context):
     method = (
         event.get("httpMethod")
@@ -168,13 +351,19 @@ def lambda_handler(event, context):
     if pymysql is None:
         return respond(500, {"message": "PyMySQL is not installed on this function"})
 
-    if method != "GET":
-        return respond(405, {"message": "Method not allowed"})
-
     try:
         connection = get_connection()
         rollback_quietly(connection)
-        return get_inventory(connection, event)
+        if method == "GET":
+            return get_inventory(connection, event)
+        if method == "POST":
+            segments = path_segments(event)
+            if "reserve" in segments:
+                return reserve_stock(connection, event)
+            if "release" in segments:
+                return release_stock(connection, event)
+            return respond(404, {"message": "Not found"})
+        return respond(405, {"message": "Method not allowed"})
     except KeyError as exc:
         print(f"Missing database setting: {exc}")
         return respond(500, {"message": f"Missing value: {exc}"})

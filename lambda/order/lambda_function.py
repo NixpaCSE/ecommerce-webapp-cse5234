@@ -7,9 +7,14 @@ on, to:
   POST /order-processing/order
 
 Catalog reads stay on the inventory Lambda. This function uses the same
-storefront database: it locks each ordered ITEM row, decrements
-AVAILABLE_QUANTITY, then inserts SHIPPING_INFO, CUSTOMER_ORDER, and
+storefront database: it locks each ordered ITEM row, checks stock, then
+inserts SHIPPING_INFO, CUSTOMER_ORDER (STATUS 'New'), and
 CUSTOMER_ORDER_LINE_ITEM. No new API Gateway route is required.
+
+This function does not decrement AVAILABLE_QUANTITY. The batch Lambda does
+that every 15 minutes for 'New' orders and marks them 'Processed'. Until
+then, stock is AVAILABLE_QUANTITY minus the quantities on 'New' orders, so
+an order that is accepted here always has stock when the batch runs.
 
 Set DB_HOST, DB_PORT, DB_NAME, DB_USER, and DB_PASSWORD for the storefront
 database. Set PAYMENT_API_URL to the full POST /payment URL. PyMySQL is not
@@ -156,6 +161,21 @@ def field(source, *names):
         if value is not None:
             return str(value)
     return ""
+
+
+def pending_quantity(cursor, item_number):
+    """Units on 'New' orders that the batch Lambda has not subtracted yet."""
+    cursor.execute(
+        """
+        SELECT COALESCE(SUM(LI.QUANTITY), 0) AS PENDING
+        FROM CUSTOMER_ORDER_LINE_ITEM LI
+        JOIN CUSTOMER_ORDER O ON O.ID = LI.CUSTOMER_ORDER_ID_FK
+        WHERE O.STATUS = 'New' AND LI.ITEM_NUMBER = %s
+        """,
+        (item_number,),
+    )
+    row = cursor.fetchone()
+    return int(row["PENDING"] or 0) if row else 0
 
 
 def collect_lines(lines):
@@ -337,14 +357,15 @@ def place_order(connection, event):
                 if item is None:
                     return respond(404, {"message": "Item not found", "itemId": str(item_id)})
 
-                available = int(item["AVAILABLE_QUANTITY"] or 0)
+                item_number = item["ITEM_NUMBER"] if item["ITEM_NUMBER"] is not None else item["ID"]
+                available = int(item["AVAILABLE_QUANTITY"] or 0) - pending_quantity(cursor, item_number)
                 if quantity > available:
                     return respond(409, {
                         "message": "Insufficient quantity",
                         "itemId": str(item["ID"]),
                         "name": item["NAME"],
                         "requested": quantity,
-                        "available": available,
+                        "available": max(available, 0),
                     })
 
                 price = float(item["UNIT_PRICE"] or 0)
@@ -353,7 +374,7 @@ def place_order(connection, event):
                     "name": item["NAME"] or "",
                     "price": price,
                     "quantity": quantity,
-                    "item_number": item["ITEM_NUMBER"] if item["ITEM_NUMBER"] is not None else item["ID"],
+                    "item_number": item_number,
                 })
                 total = round(total + price * quantity, 2)
     finally:
@@ -367,10 +388,12 @@ def place_order(connection, event):
     connection.begin()
     try:
         with connection.cursor() as cursor:
-            ordered = []
-            for line in priced:
-                item_id = line["id"]
-                quantity = line["quantity"]
+            # Lock every ordered ITEM row (in ID order, like the batch Lambda)
+            # before reading pending quantities. The pending SUM is a plain
+            # read, and InnoDB takes its snapshot at the first plain read, so
+            # it must come after the locks to see orders that just committed.
+            locked = {}
+            for line in sorted(priced, key=lambda l: l["id"]):
                 cursor.execute(
                     """
                     SELECT ID, NAME, AVAILABLE_QUANTITY
@@ -378,14 +401,19 @@ def place_order(connection, event):
                     WHERE ID = %s
                     FOR UPDATE
                     """,
-                    (item_id,),
+                    (line["id"],),
                 )
                 item = cursor.fetchone()
                 if item is None:
                     connection.rollback()
-                    return respond(404, {"message": "Item not found", "itemId": str(item_id)})
+                    return respond(404, {"message": "Item not found", "itemId": str(line["id"])})
+                locked[line["id"]] = item
 
-                available = int(item["AVAILABLE_QUANTITY"] or 0)
+            ordered = []
+            for line in priced:
+                quantity = line["quantity"]
+                item = locked[line["id"]]
+                available = int(item["AVAILABLE_QUANTITY"] or 0) - pending_quantity(cursor, line["item_number"])
                 if quantity > available:
                     connection.rollback()
                     return respond(409, {
@@ -393,25 +421,7 @@ def place_order(connection, event):
                         "itemId": str(item["ID"]),
                         "name": item["NAME"],
                         "requested": quantity,
-                        "available": available,
-                    })
-
-                updated = cursor.execute(
-                    """
-                    UPDATE ITEM
-                    SET AVAILABLE_QUANTITY = AVAILABLE_QUANTITY - %s
-                    WHERE ID = %s AND AVAILABLE_QUANTITY >= %s
-                    """,
-                    (quantity, item_id, quantity),
-                )
-                if updated != 1:
-                    connection.rollback()
-                    return respond(409, {
-                        "message": "Insufficient quantity",
-                        "itemId": str(item["ID"]),
-                        "name": item["NAME"],
-                        "requested": quantity,
-                        "available": available,
+                        "available": max(available, 0),
                     })
 
                 ordered.append({
